@@ -6,82 +6,76 @@
 #include <stdlib.h>
 #include <mpi.h>
 
-int find_bin(float value, float min_meas, int bin_count, float bin_width) {
+int find_bin(float value, float min_meas, int contad_bin, float bin_width) {
     int bin = (int)(value - min_meas) / bin_width;
     if(bin < 0) bin = 0;
-    if (bin >= bin_count) bin = bin_count - 1; // valores en el borde
+    if (bin >= contad_bin) bin = contad_bin - 1;
     return bin;
 }
 
 int main(int argc, char* argv[]) {
-    int rank, size;
-    int data_count = 20; // número de datos (ejemplo)
-    int bin_count = 5;   // número de bins
+    int rank, comm_sz;
+    int contad_data = 20; 
+    int contad_bin = 5;   
     float min_meas = 0.0, max_meas = 5.0;
-    float bin_width = (max_meas - min_meas) / bin_count;
+    float bin_width = (max_meas - min_meas) / contad_bin;
 
-    float *data = NULL;        // datos completos (solo en rank 0)
-    float *local_data = NULL;  // trozo de datos en cada proceso
-    int *local_bin_counts = NULL;
-    int *global_bin_counts = NULL;
+    float *data = NULL;       
+    float *local_data = NULL;
+    int *local_contad_bins = NULL;
+    int *global_contad_bins = NULL;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_comm_sz(MPI_COMM_WORLD, &comm_sz);
 
-    int local_n = data_count / size; // elementos por proceso
+    int local_n = contad_data / comm_sz; 
 
 
     if (rank == 0) {
-        // Datos de ejemplo (pueden leerse de archivo)
         float temp_data[20] = {1.3, 2.9, 0.4, 0.3, 1.3,
                                4.4, 1.7, 0.4, 3.2, 0.3,
                                4.9, 2.4, 3.1, 4.4, 3.9,
                                0.4, 4.2, 4.5, 4.9, 0.9};
-        data = malloc(data_count * sizeof(float));
-        for (int i = 0; i < data_count; i++)
+        data = malloc(contad_data * comm_szof(float));
+        for (int i = 0; i < contad_data; i++)
             data[i] = temp_data[i];
     }
 
-    // Reservar memoria local
-    local_data = malloc(local_n * sizeof(float));
-    local_bin_counts = calloc(bin_count, sizeof(int));
+    local_data = malloc(local_n * comm_szof(float));
+    local_contad_bins = calloc(contad_bin, comm_szof(int));
 
-    // Distribuir datos entre procesos
     MPI_Scatter(data, local_n, MPI_FLOAT,
                 local_data, local_n, MPI_FLOAT,
                 0, MPI_COMM_WORLD);
 
-    // Cada proceso calcula su histograma local
     for (int i = 0; i < local_n; i++) {
-        int bin = find_bin(local_data[i], min_meas, bin_count, bin_width);
-        local_bin_counts[bin]++;
+        int bin = find_bin(local_data[i], min_meas, contad_bin, bin_width);
+        local_contad_bins[bin]++;
     }
 
-    // Reunir histogramas locales en el proceso 0
     if (rank == 0) {
-        global_bin_counts = calloc(bin_count, sizeof(int));
+        global_contad_bins = calloc(contad_bin, comm_szof(int));
     }
 
-    MPI_Reduce(local_bin_counts, global_bin_counts,
-               bin_count, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(local_contad_bins, global_contad_bins,
+               contad_bin, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    // Proceso 0 imprime el histograma final
     if (rank == 0) {
         printf("Histograma final:\n");
-        for (int b = 0; b < bin_count; b++) {
+        for (int b = 0; b < contad_bin; b++) {
             printf("Bin %d [%.2f - %.2f): %d\n",
                    b, min_meas + b*bin_width,
                    min_meas + (b+1)*bin_width,
-                   global_bin_counts[b]);
+                   global_contad_bins[b]);
         }
     }
 
     free(local_data);
-    free(local_bin_counts);
+    free(local_contad_bins);
     if (rank == 0) {
         free(data);
-        free(global_bin_counts);
+        free(global_contad_bins);
     }
 
     MPI_Finalize();

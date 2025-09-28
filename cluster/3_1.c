@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <mpi.h>
 
-// Encuentra el bin al que pertenece una medición
 int Find_bin(float value, float min_meas, int bin_count, float bin_maxes[]) {
     int bin;
     for (bin = 0; bin < bin_count; bin++) {

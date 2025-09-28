@@ -4,24 +4,24 @@
 #include <time.h>
 
 int main(int argc, char* argv[]) {
-    int rank, size;
-    long long int total_tosses, local_tosses;
+    int rank, comm_sz;
+    long long int total, local;
     long long int number_in_circle_local = 0, number_in_circle_total = 0;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_comm_sz(MPI_COMM_WORLD, &comm_sz);
 
     if (rank == 0) {
         printf("Ingrese el numero total de lanzamientos: ");
-        scanf("%lld", &total_tosses);
+        scanf("%lld", &total);
     }
 
-    MPI_Bcast(&total_tosses, 1, MPI_LONG_LONG, 0, MPI_COMM_WORLD);
-    local_tosses = total_tosses / size;
+    MPI_Bcast(&total, 1, MPI_LONG_LONG, 0, MPI_COMM_WORLD);
+    local = total / comm_sz;
     srand(time(NULL) + rank);
 
-    for (long long int toss = 0; toss < local_tosses; toss++) {
+    for (long long int toss = 0; toss < local; toss++) {
         double x = (double)rand() / RAND_MAX * 2.0 - 1.0; // [-1,1]
         double y = (double)rand() / RAND_MAX * 2.0 - 1.0;
         double dist2 = x*x + y*y;
@@ -30,8 +30,8 @@ int main(int argc, char* argv[]) {
 
     MPI_Reduce(&number_in_circle_local, &number_in_circle_total, 1, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
     if (rank == 0) {
-        double pi_estimate = 4.0 * ((double) number_in_circle_total / (double) total_tosses);
-        printf("Estimacion de pi = %.10f\n", pi_estimate);
+        double pi = 4.0 * ((double) number_in_circle_total / (double) total);
+        printf("Estimacion de pi = %.10f\n", pi);
     }
 
     MPI_Finalize();
