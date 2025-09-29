@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
+#include <unistd.h>
 
 int find_bin(float value, float min_meas, int contad_bin, float bin_width) {
     int bin = (int)(value - min_meas) / bin_width;
@@ -27,8 +28,12 @@ int main(int argc, char* argv[]) {
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_comm_sz(MPI_COMM_WORLD, &comm_sz);
+    MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
 
+    char hostname[256];
+    gethostname(hostname, sizeof(hostname));
+    printf("Proceso %d de %d corriendo en %s\n", rank, comm_sz, hostname);
+    
     int local_n = contad_data / comm_sz; 
 
 
@@ -37,13 +42,13 @@ int main(int argc, char* argv[]) {
                                4.4, 1.7, 0.4, 3.2, 0.3,
                                4.9, 2.4, 3.1, 4.4, 3.9,
                                0.4, 4.2, 4.5, 4.9, 0.9};
-        data = malloc(contad_data * comm_szof(float));
+        data = malloc(contad_data * sizeof(float));
         for (int i = 0; i < contad_data; i++)
             data[i] = temp_data[i];
     }
 
-    local_data = malloc(local_n * comm_szof(float));
-    local_contad_bins = calloc(contad_bin, comm_szof(int));
+    local_data = malloc(local_n * sizeof(float));
+    local_contad_bins = calloc(contad_bin, sizeof(int));
 
     MPI_Scatter(data, local_n, MPI_FLOAT,
                 local_data, local_n, MPI_FLOAT,
@@ -55,7 +60,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (rank == 0) {
-        global_contad_bins = calloc(contad_bin, comm_szof(int));
+        global_contad_bins = calloc(contad_bin, sizeof(int));
     }
 
     MPI_Reduce(local_contad_bins, global_contad_bins,
@@ -81,3 +86,4 @@ int main(int argc, char* argv[]) {
     MPI_Finalize();
     return 0;
 }
+

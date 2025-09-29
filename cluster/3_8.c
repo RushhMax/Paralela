@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <mpi.h>
 #include <time.h>
+#include <unistd.h>
 
 int compara(const void *a, const void *b) {
     int A = *(int*)a;
@@ -34,6 +35,11 @@ int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
+
+    char hostname[256];
+    gethostname(hostname, sizeof(hostname));
+    printf("Proceso %d de %d corriendo en %s\n", rank, comm_sz, hostname);
+
 
     if (rank == 0) {
         if (argc != 2) {

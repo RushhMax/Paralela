@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <mpi.h>
 #include <time.h>
+#include <unistd.h>
 
 #define PING_PONG_LIMIT 100000   // número de repeticiones
 #define MENSAJE_SIZE 1               // tamaño del mensaje
@@ -13,6 +14,10 @@ int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    char hostname[256];
+    gethostname(hostname, sizeof(hostname));
+    printf("Proceso %d de %d corriendo en %s\n", rank, size, hostname);
 
     int compa = (rank + 1) % 2;
 

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <mpi.h>
 #include <time.h>
+#include <unistd.h>
 
 static void compute_conteo_bloques_displs(int n, int p, int *counts, int *displs) {
     int base = n / p;
@@ -32,6 +33,10 @@ int main(int argc, char **argv) {
     int rank, comm_sz;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
+
+    char hostname[256];
+    gethostname(hostname, sizeof(hostname));
+    printf("Proceso %d de %d corriendo en %s\n", rank, comm_sz, hostname);
 
     if (argc < 2) {
         if (rank == 0) fprintf(stderr, "Uso: %s <n> [reps]\n", argv[0]);
